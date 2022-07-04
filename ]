@@ -36,6 +36,8 @@ class NeuralNetwork:
 
     def expected_value(self, x):
         expected_values = np.zeros((1, 10))
+        print(expected_values)
+        print(x)
         expected_values[0][x] = 1
         return expected_values
 
@@ -52,7 +54,7 @@ class NeuralNetwork:
         return 1 / (1 + np.exp(-x))
 
     def loss_function(self, predicted_value, actual_value):
-        return np.sum(np.power(np.subtract(predicted_value, actual_value), 2))
+        return np.sum(np.subtract(predicted_value, actual_value)**2)
 
     def softmax(self, x):
         e_x = np.exp(x - np.max(x))
@@ -80,36 +82,41 @@ class NeuralNetwork:
 
     def backpropagation(self, x_samples, y_samples):
         i = 0
-        predicted_value = self.forward_propagation(x_samples[i])
-        cost_value = self.loss_function(predicted_value.T, self.expected_value(y_samples[i]))
+        while i != len(y_samples):
+            print(f"y_samples: {y_samples[i]}")
+            self.expected_value(y_samples[i])
+            # print(f"x_samples expected value: {self.expected_value(x_samples[i])}")
+            predicted_value = self.forward_propagation(x_samples[i])
+            print(f"predicted_value: {predicted_value.T}")
+            break
+            cost_value = self.loss_function(predicted_value.T, y_samples[i])
 
-        derivative_W2 = 2*np.sqrt(cost_value)*self.sigmoid(
-            self.output_layer_without_activity, derivative=True
-        ).T*self.hidden_layer_without_activity
+            derivative_W2 = 2*sqrt(cost_value)*self.sigmoid(
+                self.output_layer_without_activity, derivative=True
+            ).T*self.hidden_layer_without_activity
 
-        derivative_b2 = 2*np.sqrt(cost_value)*self.sigmoid(
-            self.output_layer_without_activity, derivative=True
-        )
+            derivative_b2 = 2*sqrt(cost_value)*self.sigmoid(
+                self.output_layer_without_activity, derivative=True
+            )
 
-        derivative_W1 = 2*np.sqrt(cost_value)*self.sigmoid(
-            self.output_layer_without_activity, derivative=True
-        )*self.weights_hidden_layer_to_output_layer*self.sigmoid(
-                self.hidden_layer_without_activity, derivative=True).T
+            derivative_W1 = 2*sqrt(cost_value)*self.sigmoid(
+                self.output_layer_without_activity, derivative=True
+            )*self.weights_hidden_layer_to_output_layer*self.sigmoid(
+                    self.hidden_layer_without_activity, derivative=True).T
 
+            derivative_b1 = 2*sqrt(cost_value)*self.sigmoid(
+                self.output_layer_without_activity, derivative=True
+            ).T*self.sigmoid(
+                    self.hidden_layer_without_activity, derivative=True)
 
-        derivative_b1 = 2*np.sqrt(cost_value)*self.sigmoid(
-            self.output_layer_without_activity, derivative=True
-        ).T*self.sigmoid(
-                self.hidden_layer_without_activity, derivative=True)
+            i += 1
+        return True
 
-        i += 1
-        return derivative_W2, derivative_b2, derivative_W1, derivative_b1
-
-    def gradient_descent(self, derivative_W2, derivative_b2, derivative_W1, derivative_b1):
-        self.weights_hidden_layer_to_output_layer = np.subtract(self.weights_hidden_layer_to_output_layer.T, (self.learning_rate*derivative_W2))
-        self.bias_on_output_layer = np.subtract(self.bias_on_output_layer, self.learning_rate*derivative_b2)
-        self.bias_on_hidden_layer = np.subtract(self.bias_on_hidden_layer, self.learning_rate*derivative_b1)
-        self.weights_input_layer_to_hidden_layer = np.subtract(self.weights_input_layer_to_hidden_layer, self.learning_rate*derivative_W1)
+    def gradient_descent(self):
+        self.weights_hidden_layer_to_output_layer = np.subtract(self.weights_hidden_layer_to_output_layer, (self.learning_rate*self.gradient['derivative_W2']))
+        self.bias_on_output_layer = np.subtract(self.bias_on_output_layer, self.learning_rate*self.gradient['derivative_b2'])
+        self.weights_input_layer_to_hidden_layer = np.subtract(self.weights_input_layer_to_hidden_layer, self.learning_rate*self.gradient['derivative_W1'])
+        self.bias_on_hidden_layer = np.subtract(self.bias_on_hidden_layer, self.learning_rate*self.gradient['derivative_b1'])
         return True
 
     def train(self, x, y, mini_batch_size=500):
@@ -120,8 +127,8 @@ class NeuralNetwork:
         for x, y in zip(x_samples, y_samples):
             print(f"Epoch: {epoch}")
             epoch += 1
-            derivative_W2, derivative_b2, derivative_W1, derivative_b1 = self.backpropagation(x, y)
-            self.gradient_descent(derivative_W2, derivative_b2, derivative_W1, derivative_b1)
+            self.backpropagation(x, y)
+            # self.gradient_descent()
             break
 
 
